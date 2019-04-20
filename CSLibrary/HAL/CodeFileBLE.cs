@@ -47,8 +47,14 @@ namespace CSLibrary
 
                 if (bluetoothLeDevice == null)
                 {
-                    Debug.WriteLine("Failed to connect to device.");
-                    return false;
+                    CSLibrary.DeviceFinder.SearchOnce();
+                    bluetoothLeDevice = await BluetoothLEDevice.FromIdAsync(id);
+
+                    if (bluetoothLeDevice == null)
+                    {
+                        Debug.WriteLine("Failed to connect to device.");
+                        return false;
+                    }
                 }
             }
             catch (Exception ex) when (ex.HResult == E_DEVICE_NOT_AVAILABLE)

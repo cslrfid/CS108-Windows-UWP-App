@@ -127,7 +127,22 @@ namespace CSLibrary
 
         static public event EventHandler<DeviceFinderArgs> OnSearchCompleted;
 
+        static System.Threading.AutoResetEvent _autoEvent = new System.Threading.AutoResetEvent(false);
+        static uint _searchMethod = 0; // 0 = search once
+
         static public void SearchDevice()
+        {
+            _searchMethod = 1;
+            StartSearch();
+        }
+
+        static public void SearchOnce()
+        {
+            _searchMethod = 0;
+            StartSearch();
+        }
+
+        static public void StartSearch()
         {
             // Additional properties we would like about the device.
             // Property strings are documented here https://msdn.microsoft.com/en-us/library/windows/desktop/ff521659(v=vs.85).aspx
@@ -143,6 +158,11 @@ namespace CSLibrary
                         DeviceInformationKind.AssociationEndpoint);
 
             // Register event handlers before starting the watcher.
+            deviceWatcher.Added -= DeviceWatcher_Added;
+            deviceWatcher.Updated -= DeviceWatcher_Updated;
+            deviceWatcher.Removed -= DeviceWatcher_Removed;
+            deviceWatcher.EnumerationCompleted -= DeviceWatcher_EnumerationCompleted;
+            deviceWatcher.Stopped -= DeviceWatcher_Stopped;
             deviceWatcher.Added += DeviceWatcher_Added;
             deviceWatcher.Updated += DeviceWatcher_Updated;
             deviceWatcher.Removed += DeviceWatcher_Removed;
@@ -151,8 +171,9 @@ namespace CSLibrary
 
             // Start the watcher.
             deviceWatcher.Start();
+            if (_searchMethod == 0)
+                _autoEvent.WaitOne();
         }
-
 
         static public void Stop()
         {
@@ -201,17 +222,20 @@ namespace CSLibrary
 
         static private async void DeviceWatcher_Added(DeviceWatcher sender, Windows.Devices.Enumeration.DeviceInformation deviceInfo)
         {
-            Debug.WriteLine(String.Format("Added {0}{1}", deviceInfo.Id, deviceInfo.Name));
+            Debug.WriteLine(String.Format("Found {0} | {1}", deviceInfo.Id, deviceInfo.Name));
 
             // Protect against race condition if the task runs after the app stopped the deviceWatcher.
-            if (sender == deviceWatcher)
+            if (sender == deviceWatcher && deviceInfo.Name.Contains("CS108"))
             {
                 CSLibrary.DeviceFinder.DeviceInfomation di = new CSLibrary.DeviceFinder.DeviceInfomation();
                 di.deviceName = deviceInfo.Name;
                 di.ID = (uint)_deviceDB.Count;
                 di.nativeDeviceInformation = (object)deviceInfo;
 
-                _deviceDB.Add(deviceInfo); 
+                _deviceDB.Add(deviceInfo);
+
+                if (_searchMethod == 0)
+                    _autoEvent.Set();
 
                 RaiseEvent<DeviceFinderArgs>(OnSearchCompleted, new DeviceFinderArgs(di));
             }
@@ -227,6 +251,8 @@ namespace CSLibrary
 
         static private async void DeviceWatcher_EnumerationCompleted(DeviceWatcher sender, object e)
         {
+            if (_searchMethod == 0)
+                _autoEvent.Set();
         }
 
         static private async void DeviceWatcher_Stopped(DeviceWatcher sender, object e)
