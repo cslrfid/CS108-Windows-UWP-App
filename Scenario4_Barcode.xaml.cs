@@ -94,16 +94,31 @@ namespace SDKTemplate
             {
                 var info = new InjectedInputKeyboardInfo();
 
-                // change character to virtual key code
-                info.VirtualKey = (ushort)13; // Enter/ Return
-                inputInjector.InjectKeyboardInput(new[] { info });
-                await Task.Delay(10);
+                string[] suffixList = new string[] { "13" };
+                suffixList = suffixString.Split(',');
+
+                foreach (string suff in suffixList)
+                {
+                    // change character to virtual key code
+                    //info.VirtualKey = (ushort)13; // Enter/ Return
+                    ushort result;
+                    if (ushort.TryParse(suff, out result))
+                    {
+                        info.VirtualKey = (ushort)result;
+                    }
+                    else
+                        continue;
+                    inputInjector.InjectKeyboardInput(new[] { info });
+                    await Task.Delay(10);
+                }
             }
 
         }
 
         private async void ButtonConnect_Click()
         {
+            suffixString = suffix.Text;
+
             if (ButtonConnect.Content.ToString().Substring(0, 1) == "C")
             {
                 //Windows.UI.Di
@@ -309,8 +324,11 @@ namespace SDKTemplate
             });
         }
 
-
-
+        string suffixString;
+        private void Suffix_TextChanged(object sender, TextChangedEventArgs e)
+        {
+            suffixString = suffix.Text;
+        }
     }
 }
 

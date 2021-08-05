@@ -69,6 +69,12 @@
                 <ToggleSwitch x:Name="switchBarcode" Header="Barcode" />
             </StackPanel>
 
+            <StackPanel>
+                <TextBox x:Name="suffix"
+                     Header="Suffix to be appended to each entry:" PlaceholderText="ASCII values separated by comma" Text="13"
+                     Width="500" HorizontalAlignment="Left" TextChanged="Suffix_TextChanged"/>
+            </StackPanel>
+
             <TextBlock x:Name="textBlockBatteryVoltage" Margin="0,10,0,0">
                 CS108 Bat. Voltage
             </TextBlock>
